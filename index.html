@@ -1,0 +1,111 @@
+<div id="FX_ROOT_CAT_NEURO">
+  <style>
+    #FX_ROOT_CAT_NEURO { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    
+    /* Игровой экран */
+    #game_container { position: relative; width: 100%; height: 500px; background: #eee; overflow: hidden; border-radius: 8px; display: none; }
+    #game_stage { position: absolute; width: 100%; height: 100%; top: 0; left: 0; }
+    
+    /* Таймер */
+    #timer_bar { position: absolute; top: 0; left: 0; height: 10px; background: #4CAF50; width: 100%; transition: width 1s linear; z-index: 10; }
+    #timer_text { position: absolute; top: 15px; right: 15px; font-weight: bold; font-size: 20px; color: #333; z-index: 10; background: rgba(255,255,255,0.7); padding: 5px 10px; border-radius: 20px; }
+
+    /* Редактор */
+    #editor_panel { background: #fff; padding: 20px; border: 2px solid #333; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; border-radius: 8px; }
+    .column { display: flex; flex-direction: column; gap: 8px; }
+    textarea { width: 100%; height: 100px; border-radius: 4px; border: 1px solid #ccc; padding: 5px; }
+    .full-width { grid-column: span 2; display: flex; align-items: center; gap: 20px; border-top: 1px solid #eee; pt: 10px; }
+    
+    .layer-item { position: absolute; width: 100%; height: 100%; background-size: contain; background-repeat: no-repeat; background-position: center; cursor: pointer; transition: 0.3s; }
+    
+    .btn-play { background: #ff4757; color: white; border: none; padding: 10px 25px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+    .btn-play:hover { background: #ff6b81; }
+  </style>
+
+  <div id="editor_panel">
+    <div class="column">
+      <label>✅ Правильные (URL через запятую):</label>
+      <textarea id="input_targets" placeholder="http://...cat1.png, http://...cat2.png"></textarea>
+    </div>
+    <div class="column">
+      <label>❌ Лишние (URL через запятую):</label>
+      <textarea id="input_decoys" placeholder="http://...dog.png, http://...bowl.png"></textarea>
+    </div>
+    <div class="full-width">
+      <label>Цвет маркера: <input type="color" id="marker_color" value="#00FF42"></label>
+      <label>Время (сек): <input type="number" id="input_time" value="30" style="width: 50px;"></label>
+      <button class="btn-play" onclick="startGame()">Запустить игру</button>
+    </div>
+  </div>
+
+  <div id="game_container">
+    <div id="timer_bar"></div>
+    <div id="timer_text">00</div>
+    <div id="game_stage"></div>
+  </div>
+
+  <script>
+    let config = { targets: [], decoys: [], color: '#00FF42', time: 30 };
+    let timeLeft = 0;
+    let timerId = null;
+
+    function startGame() {
+      // Считываем настройки
+      config.targets = document.getElementById('input_targets').value.split(',').filter(s => s.trim());
+      config.decoys = document.getElementById('input_decoys').value.split(',').filter(s => s.trim());
+      config.color = document.getElementById('marker_color').value;
+      config.time = parseInt(document.getElementById('input_time').value);
+
+      if(config.targets.length === 0) return alert("Добавьте хотя бы одну правильную картинку!");
+
+      // Переключаем экраны
+      document.getElementById('editor_panel').style.display = 'none';
+      document.getElementById('game_container').style.display = 'block';
+      
+      initLevel();
+      startTimer();
+    }
+
+    function initLevel() {
+      const stage = document.getElementById('game_stage');
+      stage.innerHTML = '';
+      
+      let items = [
+        ...config.targets.map(url => ({url, isTarget: true})),
+        ...config.decoys.map(url => ({url, isTarget: false}))
+      ];
+      
+      items.sort(() => Math.random() - 0.5);
+
+      items.forEach(data => {
+        const div = document.createElement('div');
+        div.className = 'layer-item';
+        div.style.backgroundImage = `url('${data.url.trim()}')`;
+        // Рандомный поворот и легкое масштабирование для сложности
+        div.style.transform = `rotate(${Math.random()*40 - 20}deg) scale(${0.8 + Math.random()*0.2})`;
+
+        div.onclick = function() {
+          if (data.isTarget && !this.classList.contains('marked')) {
+            this.style.filter = `drop-shadow(0 0 15px ${config.color})`;
+            this.classList.add('marked');
+            checkWin();
+          } else if (!data.isTarget) {
+            // Штраф за ошибку: -2 секунды
+            timeLeft = Math.max(0, timeLeft - 2);
+            this.style.filter = 'brightness(0.5) sepia(1) hue-rotate(-50deg)';
+            setTimeout(() => { if(!this.classList.contains('marked')) this.style.filter = ''; }, 500);
+          }
+        };
+        stage.appendChild(div);
+      });
+    }
+
+    function startTimer() {
+      timeLeft = config.time;
+      const bar = document.getElementById('timer_bar');
+      const text = document.getElementById('timer_text');
+      
+      timerId = setInterval(() => {
+        timeLeft--;
+        text.innerText = timeLeft;
+        let percent = (timeLeft / config.time) * 1
