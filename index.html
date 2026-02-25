@@ -1,111 +1,136 @@
-<div id="FX_ROOT_CAT_NEURO">
-  <style>
-    #FX_ROOT_CAT_NEURO { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    
-    /* Игровой экран */
-    #game_container { position: relative; width: 100%; height: 500px; background: #eee; overflow: hidden; border-radius: 8px; display: none; }
-    #game_stage { position: absolute; width: 100%; height: 100%; top: 0; left: 0; }
-    
-    /* Таймер */
-    #timer_bar { position: absolute; top: 0; left: 0; height: 10px; background: #4CAF50; width: 100%; transition: width 1s linear; z-index: 10; }
-    #timer_text { position: absolute; top: 15px; right: 15px; font-weight: bold; font-size: 20px; color: #333; z-index: 10; background: rgba(255,255,255,0.7); padding: 5px 10px; border-radius: 20px; }
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Constructor for Genially Neuro-Game</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #444; }
+        input[type="text"], textarea, input[type="number"] { 
+            width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; 
+        }
+        textarea { height: 80px; resize: vertical; }
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        button { 
+            width: 100%; padding: 15px; background: #3498db; color: white; border: none; 
+            border-radius: 8px; font-size: 16px; cursor: pointer; transition: 0.3s;
+        }
+        button:hover { background: #2980b9; }
+        #output-area { margin-top: 30px; display: none; }
+        #final-code { background: #272822; color: #f8f8f2; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 12px; height: 200px; }
+        .hint { font-size: 12px; color: #7f8c8d; margin-top: 4px; }
+    </style>
+</head>
+<body>
 
-    /* Редактор */
-    #editor_panel { background: #fff; padding: 20px; border: 2px solid #333; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; border-radius: 8px; }
-    .column { display: flex; flex-direction: column; gap: 8px; }
-    textarea { width: 100%; height: 100px; border-radius: 4px; border: 1px solid #ccc; padding: 5px; }
-    .full-width { grid-column: span 2; display: flex; align-items: center; gap: 20px; border-top: 1px solid #eee; pt: 10px; }
+<div class="container">
+    <h1>🧩 Конструктор игры «НейроКот»</h1>
     
-    .layer-item { position: absolute; width: 100%; height: 100%; background-size: contain; background-repeat: no-repeat; background-position: center; cursor: pointer; transition: 0.3s; }
-    
-    .btn-play { background: #ff4757; color: white; border: none; padding: 10px 25px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-    .btn-play:hover { background: #ff6b81; }
-  </style>
-
-  <div id="editor_panel">
-    <div class="column">
-      <label>✅ Правильные (URL через запятую):</label>
-      <textarea id="input_targets" placeholder="http://...cat1.png, http://...cat2.png"></textarea>
+    <div class="form-group">
+        <label>✅ Ссылки на правильные картинки (кошки):</label>
+        <textarea id="t_links" placeholder="https://site.com/cat1.png, https://site.com/cat2.png"></textarea>
+        <div class="hint">Разделяйте ссылки запятыми. Картинки должны быть на прозрачном фоне (PNG).</div>
     </div>
-    <div class="column">
-      <label>❌ Лишние (URL через запятую):</label>
-      <textarea id="input_decoys" placeholder="http://...dog.png, http://...bowl.png"></textarea>
+
+    <div class="form-group">
+        <label>❌ Ссылки на лишние предметы:</label>
+        <textarea id="d_links" placeholder="https://site.com/item1.png, https://site.com/item2.png"></textarea>
     </div>
-    <div class="full-width">
-      <label>Цвет маркера: <input type="color" id="marker_color" value="#00FF42"></label>
-      <label>Время (сек): <input type="number" id="input_time" value="30" style="width: 50px;"></label>
-      <button class="btn-play" onclick="startGame()">Запустить игру</button>
+
+    <div class="row">
+        <div class="form-group">
+            <label>⏱ Время (секунды):</label>
+            <input type="number" id="t_time" value="30">
+        </div>
+        <div class="form-group">
+            <label>🎨 Цвет маркера:</label>
+            <input type="color" id="t_color" value="#00FF42" style="height: 40px; cursor: pointer;">
+        </div>
     </div>
-  </div>
 
-  <div id="game_container">
-    <div id="timer_bar"></div>
-    <div id="timer_text">00</div>
-    <div id="game_stage"></div>
-  </div>
+    <button onclick="generateCode()">Сгенерировать код для Genially</button>
 
-  <script>
-    let config = { targets: [], decoys: [], color: '#00FF42', time: 30 };
-    let timeLeft = 0;
-    let timerId = null;
+    <div id="output-area">
+        <label>📋 Скопируйте этот код и вставьте в Genially:</label>
+        <textarea id="final-code" readonly></textarea>
+        <button onclick="copyCode()" style="background: #27ae60; margin-top: 10px;">Копировать в буфер обмена</button>
+    </div>
+</div>
 
-    function startGame() {
-      // Считываем настройки
-      config.targets = document.getElementById('input_targets').value.split(',').filter(s => s.trim());
-      config.decoys = document.getElementById('input_decoys').value.split(',').filter(s => s.trim());
-      config.color = document.getElementById('marker_color').value;
-      config.time = parseInt(document.getElementById('input_time').value);
+<script>
+    function generateCode() {
+        const targets = document.getElementById('t_links').value.split(',').map(s => s.trim()).filter(s => s.length > 5);
+        const decoys = document.getElementById('d_links').value.split(',').map(s => s.trim()).filter(s => s.length > 5);
+        const time = document.getElementById('t_time').value;
+        const color = document.getElementById('t_color').value;
 
-      if(config.targets.length === 0) return alert("Добавьте хотя бы одну правильную картинку!");
+        if(targets.length === 0) { alert("Добавьте ссылки на картинки!"); return; }
 
-      // Переключаем экраны
-      document.getElementById('editor_panel').style.display = 'none';
-      document.getElementById('game_container').style.display = 'block';
-      
-      initLevel();
-      startTimer();
+        // Формируем чистый JS-массив для внедрения
+        const targetsJSON = JSON.stringify(targets);
+        const decoysJSON = JSON.stringify(decoys);
+
+        const result = `<div id="FX_GENIALLY_GAME" style="width:100%; height:500px; overflow:hidden; position:relative; background:#ffffff; border-radius:10px;">
+<style>
+  #game_stage { position:absolute; width:100%; height:100%; top:0; left:0; }
+  .layer-item { position:absolute; width:100%; height:100%; background-size:contain; background-repeat:no-repeat; background-position:center; cursor:pointer; transition: 0.3s; }
+  #timer_line { position:absolute; top:0; left:0; height:8px; background:${color}; width:100%; z-index:10; transition: width 1s linear; }
+</style>
+<div id="timer_line"></div>
+<div id="game_stage"></div>
+<script>
+(function(){
+  const ts = ${targetsJSON};
+  const ds = ${decoysJSON};
+  const gameTime = ${time};
+  const marker = "${color}";
+  const stage = document.getElementById('game_stage');
+  const line = document.getElementById('timer_line');
+  let foundCount = 0;
+  let timeLeft = gameTime;
+
+  let items = [...ts.map(u=>({u, t:true})), ...ds.map(u=>({u, t:false}))].sort(()=>Math.random()-0.5);
+
+  items.forEach(item => {
+    const d = document.createElement('div');
+    d.className = 'layer-item';
+    d.style.backgroundImage = "url('" + item.u + "')";
+    d.style.transform = "rotate(" + (Math.random()*40-20) + "deg) scale("+(0.8+Math.random()*0.3)+")";
+    d.onclick = function() {
+      if(item.t && !this.dataset.found) {
+        this.style.filter = "drop-shadow(0 0 10px "+marker+") drop-shadow(0 0 5px "+marker+")";
+        this.dataset.found = true;
+        foundCount++;
+        if(foundCount === ts.length) { clearInterval(it); setTimeout(()=>alert("Победа!"), 500); }
+      } else if(!item.t) {
+        this.style.opacity = "0.5"; setTimeout(()=>this.style.opacity="1", 500);
+      }
+    };
+    stage.appendChild(d);
+  });
+
+  const it = setInterval(()=>{
+    timeLeft--;
+    line.style.width = (timeLeft/gameTime*100) + "%";
+    if(timeLeft <= 0) { clearInterval(it); alert("Время вышло!"); }
+  }, 1000);
+})();
+<\/script>
+</div>`;
+
+        document.getElementById('final-code').value = result;
+        document.getElementById('output-area').style.display = 'block';
     }
 
-    function initLevel() {
-      const stage = document.getElementById('game_stage');
-      stage.innerHTML = '';
-      
-      let items = [
-        ...config.targets.map(url => ({url, isTarget: true})),
-        ...config.decoys.map(url => ({url, isTarget: false}))
-      ];
-      
-      items.sort(() => Math.random() - 0.5);
-
-      items.forEach(data => {
-        const div = document.createElement('div');
-        div.className = 'layer-item';
-        div.style.backgroundImage = `url('${data.url.trim()}')`;
-        // Рандомный поворот и легкое масштабирование для сложности
-        div.style.transform = `rotate(${Math.random()*40 - 20}deg) scale(${0.8 + Math.random()*0.2})`;
-
-        div.onclick = function() {
-          if (data.isTarget && !this.classList.contains('marked')) {
-            this.style.filter = `drop-shadow(0 0 15px ${config.color})`;
-            this.classList.add('marked');
-            checkWin();
-          } else if (!data.isTarget) {
-            // Штраф за ошибку: -2 секунды
-            timeLeft = Math.max(0, timeLeft - 2);
-            this.style.filter = 'brightness(0.5) sepia(1) hue-rotate(-50deg)';
-            setTimeout(() => { if(!this.classList.contains('marked')) this.style.filter = ''; }, 500);
-          }
-        };
-        stage.appendChild(div);
-      });
+    function copyCode() {
+        const copyText = document.getElementById("final-code");
+        copyText.select();
+        document.execCommand("copy");
+        alert("Код скопирован!");
     }
+</script>
 
-    function startTimer() {
-      timeLeft = config.time;
-      const bar = document.getElementById('timer_bar');
-      const text = document.getElementById('timer_text');
-      
-      timerId = setInterval(() => {
-        timeLeft--;
-        text.innerText = timeLeft;
-        let percent = (timeLeft / config.time) * 1
+</body>
+</html>
