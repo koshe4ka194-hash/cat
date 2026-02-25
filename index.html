@@ -1,61 +1,59 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Constructor for Genially Neuro-Game</title>
+    <title>Neuro-Game Creator v2.0</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h1 { color: #2c3e50; text-align: center; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; color: #444; }
-        input[type="text"], textarea, input[type="number"] { 
-            width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; 
-        }
-        textarea { height: 80px; resize: vertical; }
-        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        button { 
-            width: 100%; padding: 15px; background: #3498db; color: white; border: none; 
-            border-radius: 8px; font-size: 16px; cursor: pointer; transition: 0.3s;
-        }
-        button:hover { background: #2980b9; }
-        #output-area { margin-top: 30px; display: none; }
-        #final-code { background: #272822; color: #f8f8f2; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 12px; height: 200px; }
-        .hint { font-size: 12px; color: #7f8c8d; margin-top: 4px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        textarea, input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        textarea { height: 60px; }
+        .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+        button { width: 100%; padding: 15px; background: #6c5ce7; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #a29bfe; }
+        #final-code { background: #2d3436; color: #fab1a0; padding: 15px; border-radius: 6px; font-family: monospace; font-size: 11px; height: 200px; width: 100%; margin-top: 10px; }
+        .preview-info { background: #e1f5fe; padding: 10px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; color: #0277bd; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🧩 Конструктор игры «НейроКот»</h1>
+    <h2>🛠 Мастер создания «Нейро-Путаницы»</h2>
+    <div class="preview-info">
+        <b>Совет:</b> Теперь картинки накладываются в режиме умножения (Multiply). Это значит, что темные контуры будут видны даже если они находятся под другой картинкой.
+    </div>
     
     <div class="form-group">
-        <label>✅ Ссылки на правильные картинки (кошки):</label>
-        <textarea id="t_links" placeholder="https://site.com/cat1.png, https://site.com/cat2.png"></textarea>
-        <div class="hint">Разделяйте ссылки запятыми. Картинки должны быть на прозрачном фоне (PNG).</div>
+        <label>✅ Правильные картинки (URL через запятую):</label>
+        <textarea id="t_links" placeholder="https://...cat1.png, https://...cat2.png"></textarea>
     </div>
 
     <div class="form-group">
-        <label>❌ Ссылки на лишние предметы:</label>
-        <textarea id="d_links" placeholder="https://site.com/item1.png, https://site.com/item2.png"></textarea>
+        <label>❌ Лишние предметы (URL через запятую):</label>
+        <textarea id="d_links" placeholder="https://...dog.png, https://...bowl.png"></textarea>
     </div>
 
     <div class="row">
         <div class="form-group">
-            <label>⏱ Время (секунды):</label>
+            <label>⏱ Время (сек):</label>
             <input type="number" id="t_time" value="30">
         </div>
         <div class="form-group">
             <label>🎨 Цвет маркера:</label>
-            <input type="color" id="t_color" value="#00FF42" style="height: 40px; cursor: pointer;">
+            <input type="color" id="t_color" value="#00FF42">
+        </div>
+        <div class="form-group">
+            <label>🏆 Фраза при победе:</label>
+            <input type="text" id="t_win" value="Мяу! Твоя внимательность на высоте!">
         </div>
     </div>
 
     <button onclick="generateCode()">Сгенерировать код для Genially</button>
 
-    <div id="output-area">
-        <label>📋 Скопируйте этот код и вставьте в Genially:</label>
+    <div id="output-area" style="display:none; margin-top:20px;">
+        <label>📋 Скопируйте этот код:</label>
         <textarea id="final-code" readonly></textarea>
-        <button onclick="copyCode()" style="background: #27ae60; margin-top: 10px;">Копировать в буфер обмена</button>
     </div>
 </div>
 
@@ -65,72 +63,79 @@
         const decoys = document.getElementById('d_links').value.split(',').map(s => s.trim()).filter(s => s.length > 5);
         const time = document.getElementById('t_time').value;
         const color = document.getElementById('t_color').value;
+        const winMsg = document.getElementById('t_win').value;
 
-        if(targets.length === 0) { alert("Добавьте ссылки на картинки!"); return; }
-
-        // Формируем чистый JS-массив для внедрения
         const targetsJSON = JSON.stringify(targets);
         const decoysJSON = JSON.stringify(decoys);
 
-        const result = `<div id="FX_GENIALLY_GAME" style="width:100%; height:500px; overflow:hidden; position:relative; background:#ffffff; border-radius:10px;">
+        const code = `<div id="NEURO_GAME_WRAP" style="width:100%; height:500px; position:relative; background:#fff; overflow:hidden; border-radius:15px; border: 1px solid #eee;">
 <style>
-  #game_stage { position:absolute; width:100%; height:100%; top:0; left:0; }
-  .layer-item { position:absolute; width:100%; height:100%; background-size:contain; background-repeat:no-repeat; background-position:center; cursor:pointer; transition: 0.3s; }
-  #timer_line { position:absolute; top:0; left:0; height:8px; background:${color}; width:100%; z-index:10; transition: width 1s linear; }
+  #stage { position:absolute; width:100%; height:100%; }
+  .item { 
+    position:absolute; width:100%; height:100%; 
+    background-size:contain; background-repeat:no-repeat; background-position:center; 
+    cursor:pointer; transition: 0.3s;
+    mix-blend-mode: multiply; /* Позволяет видеть слои друг под другом */
+  }
+  .item:hover { transform: scale(1.02); }
+  #timer { position:absolute; top:0; left:0; height:6px; background:${color}; width:100%; z-index:100; transition: width 1s linear; }
+  .win-overlay { 
+    position:absolute; top:0; left:0; width:100%; height:100%; 
+    background:rgba(255,255,255,0.9); display:none; flex-direction:column; 
+    align-items:center; justify-content:center; text-align:center; z-index:200; font-family:sans-serif;
+  }
 </style>
-<div id="timer_line"></div>
-<div id="game_stage"></div>
+
+<div id="timer"></div>
+<div id="stage"></div>
+<div id="win_scr" class="win-overlay">
+  <h2 style="color:#333; padding:20px;">${winMsg}</h2>
+  <button onclick="location.reload()" style="padding:10px 20px; cursor:pointer;">Играть снова</button>
+</div>
+
 <script>
 (function(){
-  const ts = ${targetsJSON};
-  const ds = ${decoysJSON};
-  const gameTime = ${time};
-  const marker = "${color}";
-  const stage = document.getElementById('game_stage');
-  const line = document.getElementById('timer_line');
-  let foundCount = 0;
-  let timeLeft = gameTime;
+  const ts = ${targetsJSON}, ds = ${decoysJSON}, gTime = ${time}, marker = "${color}";
+  const stage = document.getElementById('stage'), line = document.getElementById('timer');
+  let found = 0, timeLeft = gTime;
 
   let items = [...ts.map(u=>({u, t:true})), ...ds.map(u=>({u, t:false}))].sort(()=>Math.random()-0.5);
 
   items.forEach(item => {
-    const d = document.createElement('div');
-    d.className = 'layer-item';
-    d.style.backgroundImage = "url('" + item.u + "')";
-    d.style.transform = "rotate(" + (Math.random()*40-20) + "deg) scale("+(0.8+Math.random()*0.3)+")";
-    d.onclick = function() {
-      if(item.t && !this.dataset.found) {
-        this.style.filter = "drop-shadow(0 0 10px "+marker+") drop-shadow(0 0 5px "+marker+")";
-        this.dataset.found = true;
-        foundCount++;
-        if(foundCount === ts.length) { clearInterval(it); setTimeout(()=>alert("Победа!"), 500); }
+    const el = document.createElement('div');
+    el.className = 'item';
+    el.style.backgroundImage = "url('" + item.u + "')";
+    // Рандомное положение для разделения картинок
+    const offX = Math.random()*40-20, offY = Math.random()*40-20, rot = Math.random()*60-30;
+    el.style.transform = "translate("+offX+"px,"+offY+"px) rotate("+rot+"deg) scale(0.9)";
+    
+    el.onclick = function() {
+      if(item.t && !this.dataset.ok) {
+        this.style.filter = "drop-shadow(0 0 10px "+marker+") brightness(1.1)";
+        this.style.mixBlendMode = "normal"; // Выводим на передний план при нажатии
+        this.style.zIndex = "50";
+        this.dataset.ok = true;
+        found++;
+        if(found === ts.length) { clearInterval(it); document.getElementById('win_scr').style.display='flex'; }
       } else if(!item.t) {
-        this.style.opacity = "0.5"; setTimeout(()=>this.style.opacity="1", 500);
+        this.style.opacity = "0.3"; setTimeout(()=>this.style.opacity="1", 500);
       }
     };
-    stage.appendChild(d);
+    stage.appendChild(el);
   });
 
   const it = setInterval(()=>{
     timeLeft--;
-    line.style.width = (timeLeft/gameTime*100) + "%";
-    if(timeLeft <= 0) { clearInterval(it); alert("Время вышло!"); }
+    line.style.width = (timeLeft/gTime*100) + "%";
+    if(timeLeft <= 0) { clearInterval(it); alert("Время вышло!"); location.reload(); }
   }, 1000);
 })();
 <\/script>
 </div>`;
 
-        document.getElementById('final-code').value = result;
+        document.getElementById('final-code').value = code;
         document.getElementById('output-area').style.display = 'block';
     }
-
-    function copyCode() {
-        const copyText = document.getElementById("final-code");
-        copyText.select();
-        document.execCommand("copy");
-        alert("Код скопирован!");
-    }
 </script>
-
 </body>
 </html>
