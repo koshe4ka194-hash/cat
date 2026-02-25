@@ -8,86 +8,99 @@ function generateCode() {
     const targetsJSON = JSON.stringify(targets);
     const decoysJSON = JSON.stringify(decoys);
 
-    const code = `<div id="NEURO_WRAPPER" style="width:100%; height:500px; position:relative; background:#ffffff; overflow:hidden; border:2px solid #eee; user-select:none;">
+    const code = `<div id="NEURO_BOX" style="width:100%; height:500px; position:relative; background:#ffffff; overflow:hidden; border:2px solid #eee; touch-action:none;">
 <style>
   #stage { position:absolute; width:100%; height:100%; top:0; left:0; }
   .item { 
     position:absolute; width:100%; height:100%; 
     background-size:contain; background-repeat:no-repeat; background-position:center; 
-    cursor:pointer; transition: all 0.2s ease;
+    pointer-events: none; /* Важно: клики проходят сквозь верхние слои */
+    transition: all 0.3s ease;
     mix-blend-mode: multiply;
-    z-index: 1;
   }
-  /* Класс для выделения */
-  .marked-target { 
-    mix-blend-mode: normal !important;
-    filter: drop-shadow(0 0 5px ${color}) drop-shadow(0 0 15px ${color}) !important;
-    z-index: 100 !important;
-    transform: scale(1.05) !important;
+  .marked { 
+    mix-blend-mode: normal !important; 
+    filter: drop-shadow(0 0 2px white) drop-shadow(0 0 10px ${color}) !important;
+    z-index: 99 !important;
   }
-  #timer_gui { position:absolute; top:0; left:0; height:8px; background:${color}; width:100%; z-index:200; transition: width 1s linear; }
-  .win-layer { 
+  #timer_line { position:absolute; top:0; left:0; height:8px; background:${color}; width:100%; z-index:200; }
+  .win-ui { 
     position:absolute; top:0; left:0; width:100%; height:100%; 
-    background:rgba(255,255,255,0.95); display:none; flex-direction:column; 
+    background:rgba(255,255,255,0.9); display:none; flex-direction:column; 
     align-items:center; justify-content:center; text-align:center; z-index:1000; font-family:sans-serif;
   }
 </style>
 
-<div id="timer_gui"></div>
-<div id="stage"></div>
-<div id="win_scr" class="win-layer">
-  <h2 style="color:#333; margin-bottom:20px; padding:0 10px;">${winMsg}</h2>
-  <button onclick="location.reload()" style="padding:12px 24px; background:${color}; color:#fff; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">ИГРАТЬ СНОВА</button>
+<div id="timer_line"></div>
+<div id="stage" onclick="handleClick(event)"></div>
+<div id="win_scr" class="win-ui">
+  <h2 style="color:#333; padding:20px;">${winMsg}</h2>
+  <button onclick="location.reload()" style="padding:15px 30px; background:${color}; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold;">ЕЩЕ РАЗ</button>
 </div>
 
 <script>
-(function(){
-  const ts = ${targetsJSON}, ds = ${decoysJSON}, gTime = ${time};
-  const stage = document.getElementById('stage'), line = document.getElementById('timer_gui');
-  let found = 0, timeLeft = gTime;
+let found = 0;
+const ts = ${targetsJSON};
+const ds = ${decoysJSON};
+const gTime = ${time};
+let timeLeft = gTime;
+let itemsArr = [];
 
-  let items = [...ts.map(u=>({u, t:true})), ...ds.map(u=>({u, t:false}))].sort(()=>Math.random()-0.5);
-
-  items.forEach(item => {
+function init() {
+  const stage = document.getElementById('stage');
+  let rawItems = [...ts.map(u=>({u, t:true})), ...ds.map(u=>({u, t:false}))].sort(()=>Math.random()-0.5);
+  
+  rawItems.forEach(data => {
     const el = document.createElement('div');
     el.className = 'item';
-    el.style.backgroundImage = "url('" + item.u + "')";
-    
-    // Нейро-разброс
-    const r = Math.random()*60-30;
-    const tx = Math.random()*60-30;
-    const ty = Math.random()*60-30;
+    el.style.backgroundImage = "url('" + data.u + "')";
+    const r = Math.random()*60-30, tx = Math.random()*80-40, ty = Math.random()*80-40;
     el.style.transform = "translate("+tx+"px,"+ty+"px) rotate("+r+"deg) scale(0.85)";
-    
-    el.onclick = function(e) {
-      e.stopPropagation();
-      if(item.t && !this.classList.contains('marked-target')) {
-        this.classList.add('marked-target');
-        found++;
-        if(found === ts.length) { 
-          clearInterval(it); 
-          setTimeout(()=> { document.getElementById('win_scr').style.display='flex'; }, 600); 
-        }
-      } else if(!item.t) {
-        // Эффект промаха
-        this.style.transform += " shake 0.2s"; 
-        this.style.opacity = "0.4";
-        setTimeout(()=> { this.style.opacity = "1"; }, 400);
-      }
-    };
+    el.dataset.isTarget = data.t;
     stage.appendChild(el);
+    itemsArr.push(el);
+  });
+}
+
+function handleClick(e) {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  // Ищем все элементы в точке клика
+  const targetsInPoint = itemsArr.filter(el => {
+    if (el.classList.contains('marked')) return false;
+    // Простая проверка попадания в область (можно усложнить, но для путаницы хватит)
+    const elRect = el.getBoundingClientRect();
+    return (e.clientX >= elRect.left && e.clientX <= elRect.right && e.clientY >= elRect.top && e.clientY <= elRect.bottom);
   });
 
-  const it = setInterval(()=>{
-    timeLeft--;
-    line.style.width = (timeLeft/gTime*100) + "%";
-    if(timeLeft <= 0) { 
-       clearInterval(it); 
-       alert("Время вышло!"); 
-       location.reload(); 
+  // Если попали в цель
+  const targetHit = targetsInPoint.find(el => el.dataset.isTarget === 'true');
+  
+  if (targetHit) {
+    targetHit.classList.add('marked');
+    found++;
+    if(found === ts.length) { 
+      clearInterval(timerIdx);
+      setTimeout(()=> document.getElementById('win_scr').style.display='flex', 500);
     }
-  }, 1000);
-})();
+  } else {
+    // Если промахнулись или нажали на лишний предмет
+    const decoyHit = targetsInPoint.find(el => el.dataset.isTarget === 'false');
+    if(decoyHit) {
+      decoyHit.style.opacity = "0.3";
+      setTimeout(()=> decoyHit.style.opacity = "1", 300);
+    }
+  }
+}
+
+init();
+const timerIdx = setInterval(() => {
+  timeLeft--;
+  document.getElementById('timer_line').style.width = (timeLeft/gTime*100) + "%";
+  if(timeLeft <= 0) { clearInterval(timerIdx); alert("Время вышло!"); location.reload(); }
+}, 1000);
 <\/script>
 </div>`;
 
